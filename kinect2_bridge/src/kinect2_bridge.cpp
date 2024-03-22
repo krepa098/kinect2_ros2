@@ -40,7 +40,7 @@
 #include "sensor_msgs/msg/camera_info.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/compressed_image.hpp"
-#include "sensor_msgs/sensor_msgs/image_encodings.hpp"
+#include "sensor_msgs/image_encodings.hpp"
 
 #include "tf2/LinearMath/Transform.h"
 #include "tf2/LinearMath/Matrix3x3.h"
@@ -58,8 +58,6 @@
 #include "libfreenect2/packet_pipeline.h"
 #include "libfreenect2/config.h"
 #include "libfreenect2/registration.h"
-
-#include "compressed_depth_image_transport/compression_common.h"
 
 #include <chrono>
 

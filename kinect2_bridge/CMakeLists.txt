@@ -19,25 +19,19 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(compressed_depth_image_transport REQUIRED)
-
 find_package(freenect2 REQUIRED)
 
 add_executable(${PROJECT_NAME}_node
 	src/kinect2_bridge.cpp
 )
 
-include_directories(
-  /opt/ros/humble/include
-  include
-)
-
 target_link_libraries(${PROJECT_NAME}_node freenect2)
+
+include_directories(include/kinect2_bridge)
 
 ament_target_dependencies(${PROJECT_NAME}_node 
                           rclcpp 
                           OpenCV 
-                          compressed_depth_image_transport 
                           kinect2_registration 
                           tf2 
                           tf2_ros 
@@ -66,6 +60,11 @@ install(
 install(DIRECTORY
   launch
   DESTINATION share/${PROJECT_NAME}/
+)
+
+install(
+  DIRECTORY "include/"
+  DESTINATION include
 )
 
 ament_package()

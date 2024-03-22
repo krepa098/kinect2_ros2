@@ -17,7 +17,6 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>kinect2_registration</depend>
   <depend>depth_image_proc</depend>
-  <depend>compressed_depth_image_transport</depend>
 
   <exec_depend>ros2launch</exec_depend>
 
