@@ -31,6 +31,12 @@ Launch the ```kinect2_bridge``` to receive ```color```, ```depth```, and ```mono
 ros2 launch kinect2_bridge kinect2_bridge_launch.yaml
 ```
 
+You can also launch ```rtabmap``` to create 3D scans:
+
+```
+ros2 launch kinect2_bridge rtabmap.launch.py
+```
+
 ### Calibrate
 Use the calibration utility
 ```
