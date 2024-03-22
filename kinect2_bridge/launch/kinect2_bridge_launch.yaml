@@ -1,0 +1,106 @@
+launch:
+
+- arg:
+    name: "base_name"
+    default: "kinect2"
+
+- node:
+    pkg: "kinect2_bridge"
+    exec: "kinect2_bridge_node"
+    name: "kinect2_bridge_node"
+    param:
+        - name: "base_name"
+          value: "$(var base_name)"
+
+        - name: "sensor"
+          value: ""
+
+        - name: "publish_tf" 
+          value: true
+
+        - name: "base_name_tf"  
+          value: "$(var base_name)"
+
+        - name: "fps_limit"  
+          value: 30.0
+
+        - name: "use_png"  
+          value: false
+
+        - name: "depth_method"  
+          value: "opencl"
+
+        - name: "reg_method"  
+          value: "default"
+
+        - name: "max_depth"  
+          value: 12.0
+
+        - name: "min_depth"  
+          value: 0.1
+
+        - name: "queue_size"  
+          value: 5
+
+        - name: "bilateral_filter"  
+          value: true
+
+        - name: "edge_aware_filter"  
+          value: true
+          
+        - name: "worker_threads"  
+          value: 4
+
+# - node:
+#     pkg: "depth_image_proc"
+#     exec: "point_cloud_xyzrgb_node"
+#     name: "$(var base_name)_points_xyzrgb_sd"
+#     remap:
+#     -
+#       from: "rgb/camera_info"
+#       to: "/$(var base_name)/sd/camera_info"
+#     -
+#       from: "rgb/image_rect_color"
+#       to: "/$(var base_name)/sd/image_color_rect"
+#     -
+#       from: "depth_registered/image_rect"
+#       to: "/$(var base_name)/sd/image_depth_rect"
+#     -
+#       from: "points"
+#       to: "/$(var base_name)/sd/points"
+
+- node:
+    pkg: "depth_image_proc"
+    exec: "point_cloud_xyzrgb_node"
+    name: "$(var base_name)_points_xyzrgb_qhd"
+    remap:
+    -
+      from: "rgb/camera_info"
+      to: "/$(var base_name)/qhd/camera_info"
+    -
+      from: "rgb/image_rect_color"
+      to: "/$(var base_name)/qhd/image_color_rect"
+    -
+      from: "depth_registered/image_rect"
+      to: "/$(var base_name)/qhd/image_depth_rect"
+    -
+      from: "points"
+      to: "/$(var base_name)/qhd/points"
+
+# - node:
+#     pkg: "depth_image_proc"
+#     exec: "point_cloud_xyzrgb_node"
+#     name: "$(var base_name)_points_xyzrgb_hd"
+#     remap:
+#     -
+#       from: "rgb/camera_info"
+#       to: "/$(var base_name)/hd/camera_info"
+#     -
+#       from: "rgb/image_rect_color"
+#       to: "/$(var base_name)/hd/image_color_rect"
+#     -
+#       from: "depth_registered/image_rect"
+#       to: "/$(var base_name)/hd/image_depth_rect"
+#     -
+#       from: "points"
+#       to: "/$(var base_name)/hd/points"

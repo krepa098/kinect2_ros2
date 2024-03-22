@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <kinect2_registration/kinect2_registration.h>
-#include <kinect2_registration/kinect2_console.h>
+#include "kinect2_registration/kinect2_registration.h"
+#include "kinect2_registration/kinect2_console.h"
 
 #ifdef DEPTH_REG_CPU
 #include "depth_registration_cpu.h"
@@ -52,9 +52,9 @@ bool DepthRegistration::init(const cv::Mat &cameraMatrixRegistered, const cv::Si
   return init(deviceId);
 }
 
-DepthRegistration *DepthRegistration::New(Method method)
+DepthRegistration *DepthRegistration::New(rclcpp::Node::SharedPtr node, Method method)
 {
-  if(method == DEFAULT)
+  if (method == DEFAULT)
   {
 #ifdef DEPTH_REG_OPENCL
     method = OPENCL;
@@ -63,39 +63,38 @@ DepthRegistration *DepthRegistration::New(Method method)
 #endif
   }
 
-  switch(method)
+  switch (method)
   {
   case DEFAULT:
-    OUT_ERROR("No default registration method available!");
+    OUT_ERROR(node, "No default registration method available!");
     break;
   case CPU:
 #ifdef DEPTH_REG_CPU
-    OUT_INFO("Using CPU registration method!");
+    OUT_INFO(node, "Using CPU registration method!");
     return new DepthRegistrationCPU();
 #else
-    OUT_ERROR("CPU registration method not available!");
+    OUT_ERROR(node, "CPU registration method not available!");
     break;
 #endif
   case OPENCL:
 #ifdef DEPTH_REG_OPENCL
-    OUT_INFO("Using OpenCL registration method!");
-    return new DepthRegistrationOpenCL();
+    OUT_INFO(node, "Using OpenCL registration method!");
+    return new DepthRegistrationOpenCL(node);
 #else
-    OUT_ERROR("OpenCL registration method not available!");
+    OUT_ERROR(node, "OpenCL registration method not available!");
     break;
 #endif
   }
   return NULL;
 }
 
-
 const std::string getFunctionName(const std::string &name)
 {
-    size_t end = name.rfind('(');
-    if(end == std::string::npos)
-    {
-        end = name.size();
-    }
-    size_t begin = 1 + name.rfind(' ', end);
-    return name.substr(begin, end - begin);
+  size_t end = name.rfind('(');
+  if (end == std::string::npos)
+  {
+    end = name.size();
+  }
+  size_t begin = 1 + name.rfind(' ', end);
+  return name.substr(begin, end - begin);
 }

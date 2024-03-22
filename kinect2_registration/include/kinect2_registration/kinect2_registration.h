@@ -23,6 +23,8 @@
 
 #include <opencv2/opencv.hpp>
 
+#include "rclcpp/node.hpp"
+
 class DepthRegistration
 {
 public:
@@ -51,7 +53,7 @@ public:
 
   virtual bool registerDepth(const cv::Mat &depth, cv::Mat &registered) = 0;
 
-  static DepthRegistration *New(Method method = DEFAULT);
+  static DepthRegistration *New(rclcpp::Node::SharedPtr node, Method method = DEFAULT);
 };
 
 #endif //__KINECT2_REGISTRATION_H__

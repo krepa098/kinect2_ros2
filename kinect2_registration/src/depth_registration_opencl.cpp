@@ -17,7 +17,7 @@
 
 #include <fstream>
 
-#include <kinect2_registration/kinect2_console.h>
+#include "kinect2_registration/kinect2_console.h"
 
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
@@ -27,8 +27,8 @@
 #include <CL/cl.h>
 #ifdef CL_VERSION_1_2
 #undef CL_VERSION_1_2
-#endif //CL_VERSION_1_2
-#endif //LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD
+#endif // CL_VERSION_1_2
+#endif // LIBFREENECT2_OPENCL_ICD_LOADER_IS_OLD
 
 #include <CL/cl.hpp>
 
@@ -38,14 +38,43 @@
 
 #include "depth_registration_opencl.h"
 
-//#define ENABLE_PROFILING_CL
+// #define ENABLE_PROFILING_CL
 
 #define CL_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define PRINT_CL_ERROR(expr, err) OUT_ERROR(FG_BLUE "[" << CL_FILENAME << "]" FG_CYAN "(" << __LINE__ << ") " FG_YELLOW << expr << FG_RED " failed: " << err)
+#define PRINT_CL_ERROR(node, expr, err) OUT_ERROR(node, FG_BLUE "[" << CL_FILENAME << "]" FG_CYAN "(" << __LINE__ << ") " FG_YELLOW << expr << FG_RED " failed: " << err)
 
-#define CHECK_CL_PARAM(expr) do { cl_int err = CL_SUCCESS; (expr); if (err != CL_SUCCESS) { PRINT_CL_ERROR(#expr, err); return false; } } while(0)
-#define CHECK_CL_RETURN(expr) do { cl_int err = (expr); if (err != CL_SUCCESS) { PRINT_CL_ERROR(#expr, err); return false; } } while(0)
-#define CHECK_CL_ON_FAIL(expr, on_fail) do { cl_int err = (expr); if (err != CL_SUCCESS) { PRINT_CL_ERROR(#expr, err); on_fail; return false; } } while(0)
+#define CHECK_CL_PARAM(node, expr)      \
+  do                                    \
+  {                                     \
+    cl_int err = CL_SUCCESS;            \
+    (expr);                             \
+    if (err != CL_SUCCESS)              \
+    {                                   \
+      PRINT_CL_ERROR(node, #expr, err); \
+      return false;                     \
+    }                                   \
+  } while (0)
+#define CHECK_CL_RETURN(node, expr)     \
+  do                                    \
+  {                                     \
+    cl_int err = (expr);                \
+    if (err != CL_SUCCESS)              \
+    {                                   \
+      PRINT_CL_ERROR(node, #expr, err); \
+      return false;                     \
+    }                                   \
+  } while (0)
+#define CHECK_CL_ON_FAIL(node, expr, on_fail) \
+  do                                          \
+  {                                           \
+    cl_int err = (expr);                      \
+    if (err != CL_SUCCESS)                    \
+    {                                         \
+      PRINT_CL_ERROR(node, #expr, err);       \
+      on_fail;                                \
+      return false;                           \
+    }                                         \
+  } while (0)
 
 struct DepthRegistrationOpenCL::OCLData
 {
@@ -87,8 +116,8 @@ struct DepthRegistrationOpenCL::OCLData
 #endif
 };
 
-DepthRegistrationOpenCL::DepthRegistrationOpenCL()
-  : DepthRegistration()
+DepthRegistrationOpenCL::DepthRegistrationOpenCL(rclcpp::Node::SharedPtr node)
+    : DepthRegistration(), node(node)
 {
   data = new OCLData;
 }
@@ -101,12 +130,12 @@ DepthRegistrationOpenCL::~DepthRegistrationOpenCL()
 void getDevices(const std::vector<cl::Platform> &platforms, std::vector<cl::Device> &devices)
 {
   devices.clear();
-  for(size_t i = 0; i < platforms.size(); ++i)
+  for (size_t i = 0; i < platforms.size(); ++i)
   {
     const cl::Platform &platform = platforms[i];
 
     std::vector<cl::Device> devs;
-    if(platform.getDevices(CL_DEVICE_TYPE_ALL, &devs) != CL_SUCCESS)
+    if (platform.getDevices(CL_DEVICE_TYPE_ALL, &devs) != CL_SUCCESS)
     {
       continue;
     }
@@ -123,7 +152,7 @@ std::string deviceString(cl::Device &dev)
   dev.getInfo(CL_DEVICE_VENDOR, &devVendor);
   dev.getInfo(CL_DEVICE_TYPE, &devTypeID);
 
-  switch(devTypeID)
+  switch (devTypeID)
   {
   case CL_DEVICE_TYPE_CPU:
     devType = "CPU";
@@ -143,7 +172,7 @@ std::string deviceString(cl::Device &dev)
 
 bool selectDevice(std::vector<cl::Device> &devices, cl::Device &device, const int deviceId = -1)
 {
-  if(deviceId != -1 && devices.size() > (size_t)deviceId)
+  if (deviceId != -1 && devices.size() > (size_t)deviceId)
   {
     device = devices[deviceId];
     return true;
@@ -152,13 +181,13 @@ bool selectDevice(std::vector<cl::Device> &devices, cl::Device &device, const in
   bool selected = false;
   cl_device_type selectedType = 0;
 
-  for(size_t i = 0; i < devices.size(); ++i)
+  for (size_t i = 0; i < devices.size(); ++i)
   {
     cl::Device &dev = devices[i];
     cl_device_type devTypeID;
     dev.getInfo(CL_DEVICE_TYPE, &devTypeID);
 
-    if(!selected || (selectedType != CL_DEVICE_TYPE_GPU && devTypeID == CL_DEVICE_TYPE_GPU))
+    if (!selected || (selectedType != CL_DEVICE_TYPE_GPU && devTypeID == CL_DEVICE_TYPE_GPU))
     {
       selectedType = devTypeID;
       selected = true;
@@ -171,55 +200,55 @@ bool selectDevice(std::vector<cl::Device> &devices, cl::Device &device, const in
 bool DepthRegistrationOpenCL::init(const int deviceId)
 {
   std::string sourceCode;
-  if(!readProgram(sourceCode))
+  if (!readProgram(sourceCode))
   {
     return false;
   }
 
   std::vector<cl::Platform> platforms;
-  CHECK_CL_RETURN(cl::Platform::get(&platforms));
+  CHECK_CL_RETURN(node, cl::Platform::get(&platforms));
 
-  if(platforms.empty())
+  if (platforms.empty())
   {
-    OUT_ERROR("no opencl platforms found.");
+    OUT_ERROR(node, "no opencl platforms found.");
     return false;
   }
 
   std::vector<cl::Device> devices;
   getDevices(platforms, devices);
 
-  OUT_INFO("devices:");
-  for(size_t i = 0; i < devices.size(); ++i)
+  OUT_INFO(node, "devices:");
+  for (size_t i = 0; i < devices.size(); ++i)
   {
-    OUT_INFO("  " << i << ": " FG_CYAN << deviceString(devices[i]) << NO_COLOR);
+    OUT_INFO(node, "  " << i << ": " FG_CYAN << deviceString(devices[i]) << NO_COLOR);
   }
 
-  if(!selectDevice(devices, data->device, deviceId))
+  if (!selectDevice(devices, data->device, deviceId))
   {
-    OUT_ERROR("could not find any suitable device");
+    OUT_ERROR(node, "could not find any suitable device");
     return false;
   }
-  OUT_INFO("selected device: " FG_YELLOW << deviceString(data->device) << NO_COLOR);
+  OUT_INFO(node, "selected device: " FG_YELLOW << deviceString(data->device) << NO_COLOR);
 
-  CHECK_CL_PARAM(data->context = cl::Context(data->device, NULL, NULL, NULL, &err));
+  CHECK_CL_PARAM(node, data->context = cl::Context(data->device, NULL, NULL, NULL, &err));
 
   std::string options;
   generateOptions(options);
 
   cl::Program::Sources source(1, std::make_pair(sourceCode.c_str(), sourceCode.length()));
-  CHECK_CL_PARAM(data->program = cl::Program(data->context, source, &err));
+  CHECK_CL_PARAM(node, data->program = cl::Program(data->context, source, &err));
 
-  CHECK_CL_ON_FAIL(data->program.build(options.c_str()),
-                   OUT_ERROR("failed to build program: " << err);
-                   OUT_ERROR("Build Status: " << data->program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(data->device));
-                   OUT_ERROR("Build Options:\t" << data->program.getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(data->device));
-                   OUT_ERROR("Build Log:\t " << data->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(data->device)));
+  CHECK_CL_ON_FAIL(node, data->program.build(options.c_str()),
+                   OUT_ERROR(node, "failed to build program: " << err);
+                   OUT_ERROR(node, "Build Status: " << data->program.getBuildInfo<CL_PROGRAM_BUILD_STATUS>(data->device));
+                   OUT_ERROR(node, "Build Options:\t" << data->program.getBuildInfo<CL_PROGRAM_BUILD_OPTIONS>(data->device));
+                   OUT_ERROR(node, "Build Log:\t " << data->program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(data->device)));
 
 #ifdef ENABLE_PROFILING_CL
   data->count = 0;
   CHECK_CL_PARAM(data->queue = cl::CommandQueue(data->context, data->device, CL_QUEUE_PROFILING_ENABLE, &err));
 #else
-  CHECK_CL_PARAM(data->queue = cl::CommandQueue(data->context, data->device, 0, &err));
+  CHECK_CL_PARAM(node, data->queue = cl::CommandQueue(data->context, data->device, 0, &err));
 #endif
 
   data->sizeDepth = sizeDepth.height * sizeDepth.width * sizeof(uint16_t);
@@ -230,46 +259,46 @@ bool DepthRegistrationOpenCL::init(const int deviceId)
   data->sizeSelDist = sizeRegistered.height * sizeRegistered.width * sizeof(float);
   data->sizeMap = sizeRegistered.height * sizeRegistered.width * sizeof(float);
 
-  CHECK_CL_PARAM(data->bufferDepth = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeDepth, NULL, &err));
-  CHECK_CL_PARAM(data->bufferScaled = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeRegistered, NULL, &err));
-  CHECK_CL_PARAM(data->bufferRegistered = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeRegistered, NULL, &err));
-  CHECK_CL_PARAM(data->bufferIndex = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeIndex, NULL, &err));
-  CHECK_CL_PARAM(data->bufferImgZ = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeImgZ, NULL, &err));
-  CHECK_CL_PARAM(data->bufferDists = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeDists, NULL, &err));
-  CHECK_CL_PARAM(data->bufferSelDist = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeSelDist, NULL, &err));
-  CHECK_CL_PARAM(data->bufferMapX = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeMap, NULL, &err));
-  CHECK_CL_PARAM(data->bufferMapY = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeMap, NULL, &err));
-  CHECK_CL_PARAM(data->bufferOutput = cl::Buffer(data->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, data->sizeRegistered, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferDepth = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeDepth, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferScaled = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeRegistered, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferRegistered = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeRegistered, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferIndex = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeIndex, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferImgZ = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeImgZ, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferDists = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeDists, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferSelDist = cl::Buffer(data->context, CL_MEM_READ_WRITE, data->sizeSelDist, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferMapX = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeMap, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferMapY = cl::Buffer(data->context, CL_MEM_READ_ONLY, data->sizeMap, NULL, &err));
+  CHECK_CL_PARAM(node, data->bufferOutput = cl::Buffer(data->context, CL_MEM_WRITE_ONLY | CL_MEM_ALLOC_HOST_PTR, data->sizeRegistered, NULL, &err));
 
-  CHECK_CL_PARAM(data->kernelSetZero = cl::Kernel(data->program, "setZero", &err));
-  CHECK_CL_RETURN(data->kernelSetZero.setArg(0, data->bufferRegistered));
-  CHECK_CL_RETURN(data->kernelSetZero.setArg(1, data->bufferSelDist));
+  CHECK_CL_PARAM(node, data->kernelSetZero = cl::Kernel(data->program, "setZero", &err));
+  CHECK_CL_RETURN(node, data->kernelSetZero.setArg(0, data->bufferRegistered));
+  CHECK_CL_RETURN(node, data->kernelSetZero.setArg(1, data->bufferSelDist));
 
-  CHECK_CL_PARAM(data->kernelProject = cl::Kernel(data->program, "project", &err));
-  CHECK_CL_RETURN(data->kernelProject.setArg(0, data->bufferScaled));
-  CHECK_CL_RETURN(data->kernelProject.setArg(1, data->bufferIndex));
-  CHECK_CL_RETURN(data->kernelProject.setArg(2, data->bufferImgZ));
-  CHECK_CL_RETURN(data->kernelProject.setArg(3, data->bufferDists));
-  CHECK_CL_RETURN(data->kernelProject.setArg(4, data->bufferSelDist));
-  CHECK_CL_RETURN(data->kernelProject.setArg(5, data->bufferRegistered));
+  CHECK_CL_PARAM(node, data->kernelProject = cl::Kernel(data->program, "project", &err));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(0, data->bufferScaled));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(1, data->bufferIndex));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(2, data->bufferImgZ));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(3, data->bufferDists));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(4, data->bufferSelDist));
+  CHECK_CL_RETURN(node, data->kernelProject.setArg(5, data->bufferRegistered));
 
-  CHECK_CL_PARAM(data->kernelCheckDepth = cl::Kernel(data->program, "checkDepth", &err));
-  CHECK_CL_RETURN(data->kernelCheckDepth.setArg(0, data->bufferIndex));
-  CHECK_CL_RETURN(data->kernelCheckDepth.setArg(1, data->bufferImgZ));
-  CHECK_CL_RETURN(data->kernelCheckDepth.setArg(2, data->bufferDists));
-  CHECK_CL_RETURN(data->kernelCheckDepth.setArg(3, data->bufferSelDist));
-  CHECK_CL_RETURN(data->kernelCheckDepth.setArg(4, data->bufferRegistered));
+  CHECK_CL_PARAM(node, data->kernelCheckDepth = cl::Kernel(data->program, "checkDepth", &err));
+  CHECK_CL_RETURN(node, data->kernelCheckDepth.setArg(0, data->bufferIndex));
+  CHECK_CL_RETURN(node, data->kernelCheckDepth.setArg(1, data->bufferImgZ));
+  CHECK_CL_RETURN(node, data->kernelCheckDepth.setArg(2, data->bufferDists));
+  CHECK_CL_RETURN(node, data->kernelCheckDepth.setArg(3, data->bufferSelDist));
+  CHECK_CL_RETURN(node, data->kernelCheckDepth.setArg(4, data->bufferRegistered));
 
-  CHECK_CL_PARAM(data->kernelRemap = cl::Kernel(data->program, "remapDepth", &err));
-  CHECK_CL_RETURN(data->kernelRemap.setArg(0, data->bufferDepth));
-  CHECK_CL_RETURN(data->kernelRemap.setArg(1, data->bufferScaled));
-  CHECK_CL_RETURN(data->kernelRemap.setArg(2, data->bufferMapX));
-  CHECK_CL_RETURN(data->kernelRemap.setArg(3, data->bufferMapY));
+  CHECK_CL_PARAM(node, data->kernelRemap = cl::Kernel(data->program, "remapDepth", &err));
+  CHECK_CL_RETURN(node, data->kernelRemap.setArg(0, data->bufferDepth));
+  CHECK_CL_RETURN(node, data->kernelRemap.setArg(1, data->bufferScaled));
+  CHECK_CL_RETURN(node, data->kernelRemap.setArg(2, data->bufferMapX));
+  CHECK_CL_RETURN(node, data->kernelRemap.setArg(3, data->bufferMapY));
 
-  CHECK_CL_RETURN(data->queue.enqueueWriteBuffer(data->bufferMapX, CL_TRUE, 0, data->sizeMap, mapX.data));
-  CHECK_CL_RETURN(data->queue.enqueueWriteBuffer(data->bufferMapY, CL_TRUE, 0, data->sizeMap, mapY.data));
+  CHECK_CL_RETURN(node, data->queue.enqueueWriteBuffer(data->bufferMapX, CL_TRUE, 0, data->sizeMap, mapX.data));
+  CHECK_CL_RETURN(node, data->queue.enqueueWriteBuffer(data->bufferMapY, CL_TRUE, 0, data->sizeMap, mapY.data));
 
-  CHECK_CL_PARAM(data->dataOutput = (unsigned char *)data->queue.enqueueMapBuffer(data->bufferOutput, CL_TRUE, CL_MAP_READ, 0, data->sizeRegistered, NULL, NULL, &err));
+  CHECK_CL_PARAM(node, data->dataOutput = (unsigned char *)data->queue.enqueueMapBuffer(data->bufferOutput, CL_TRUE, CL_MAP_READ, 0, data->sizeRegistered, NULL, NULL, &err));
   return true;
 }
 
@@ -279,25 +308,25 @@ bool DepthRegistrationOpenCL::registerDepth(const cv::Mat &depth, cv::Mat &regis
   std::vector<cl::Event> eventZero(2), eventRemap(1), eventProject(1), eventCheckDepth1(1), eventCheckDepth2(1);
   cl::NDRange range(sizeRegistered.height * sizeRegistered.width);
 
-  CHECK_CL_RETURN(data->queue.enqueueWriteBuffer(data->bufferDepth, CL_FALSE, 0, data->sizeDepth, depth.data, NULL, &eventZero[0]));
-  CHECK_CL_RETURN(data->queue.enqueueNDRangeKernel(data->kernelSetZero, cl::NullRange, range, cl::NullRange, NULL, &eventZero[1]));
+  CHECK_CL_RETURN(node, data->queue.enqueueWriteBuffer(data->bufferDepth, CL_FALSE, 0, data->sizeDepth, depth.data, NULL, &eventZero[0]));
+  CHECK_CL_RETURN(node, data->queue.enqueueNDRangeKernel(data->kernelSetZero, cl::NullRange, range, cl::NullRange, NULL, &eventZero[1]));
 
-  CHECK_CL_RETURN(data->queue.enqueueNDRangeKernel(data->kernelRemap, cl::NullRange, range, cl::NullRange, &eventZero, &eventRemap[0]));
+  CHECK_CL_RETURN(node, data->queue.enqueueNDRangeKernel(data->kernelRemap, cl::NullRange, range, cl::NullRange, &eventZero, &eventRemap[0]));
 
-  CHECK_CL_RETURN(data->queue.enqueueNDRangeKernel(data->kernelProject, cl::NullRange, range, cl::NullRange, &eventRemap, &eventProject[0]));
+  CHECK_CL_RETURN(node, data->queue.enqueueNDRangeKernel(data->kernelProject, cl::NullRange, range, cl::NullRange, &eventRemap, &eventProject[0]));
 
-  CHECK_CL_RETURN(data->queue.enqueueNDRangeKernel(data->kernelCheckDepth, cl::NullRange, range, cl::NullRange, &eventProject, &eventCheckDepth1[0]));
+  CHECK_CL_RETURN(node, data->queue.enqueueNDRangeKernel(data->kernelCheckDepth, cl::NullRange, range, cl::NullRange, &eventProject, &eventCheckDepth1[0]));
 
-  CHECK_CL_RETURN(data->queue.enqueueNDRangeKernel(data->kernelCheckDepth, cl::NullRange, range, cl::NullRange, &eventCheckDepth1, &eventCheckDepth2[0]));
+  CHECK_CL_RETURN(node, data->queue.enqueueNDRangeKernel(data->kernelCheckDepth, cl::NullRange, range, cl::NullRange, &eventCheckDepth1, &eventCheckDepth2[0]));
 
-  CHECK_CL_RETURN(data->queue.enqueueReadBuffer(data->bufferRegistered, CL_FALSE, 0, data->sizeRegistered, data->dataOutput, &eventCheckDepth2, &eventRead));
+  CHECK_CL_RETURN(node, data->queue.enqueueReadBuffer(data->bufferRegistered, CL_FALSE, 0, data->sizeRegistered, data->dataOutput, &eventCheckDepth2, &eventRead));
 
-  CHECK_CL_RETURN(eventRead.wait());
+  CHECK_CL_RETURN(node, eventRead.wait());
 
   registered = cv::Mat(sizeRegistered, CV_16U, data->dataOutput);
 
 #ifdef ENABLE_PROFILING_CL
-  if(data->count == 0)
+  if (data->count == 0)
   {
     data->timings.clear();
     data->timings.resize(7, 0.0);
@@ -311,7 +340,7 @@ bool DepthRegistrationOpenCL::registerDepth(const cv::Mat &depth, cv::Mat &regis
   data->timings[5] += eventCheckDepth2[0].getProfilingInfo<CL_PROFILING_COMMAND_END>() - eventCheckDepth2[0].getProfilingInfo<CL_PROFILING_COMMAND_START>();
   data->timings[6] += eventRead.getProfilingInfo<CL_PROFILING_COMMAND_END>() - eventRead.getProfilingInfo<CL_PROFILING_COMMAND_START>();
 
-  if(++data->count == 100)
+  if (++data->count == 100)
   {
     double sum = data->timings[0] + data->timings[1] + data->timings[2] + data->timings[3] + data->timings[4] + data->timings[5] + data->timings[6];
     OUT_INFO("writing depth: " << data->timings[0] / 100000000.0 << " ms.");
@@ -377,7 +406,7 @@ bool DepthRegistrationOpenCL::readProgram(std::string &source) const
 {
   std::ifstream file(REG_OPENCL_FILE);
 
-  if(!file.is_open())
+  if (!file.is_open())
   {
     return false;
   }

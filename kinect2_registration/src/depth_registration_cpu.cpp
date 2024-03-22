@@ -18,7 +18,7 @@
 #include "depth_registration_cpu.h"
 
 DepthRegistrationCPU::DepthRegistrationCPU()
-  : DepthRegistration()
+    : DepthRegistration()
 {
 }
 
@@ -62,7 +62,7 @@ inline uint16_t DepthRegistrationCPU::interpolate(const cv::Mat &in, const float
   const int yL = (int)floor(y);
   const int yH = (int)ceil(y);
 
-  if(xL < 0 || yL < 0 || xH >= in.cols || yH >= in.rows)
+  if (xL < 0 || yL < 0 || xH >= in.cols || yH >= in.rows)
   {
     return 0;
   }
@@ -77,7 +77,7 @@ inline uint16_t DepthRegistrationCPU::interpolate(const cv::Mat &in, const float
   int vRB = pRB > 0;
   int count = vLT + vRT + vLB + vRB;
 
-  if(count < 3)
+  if (count < 3)
   {
     return 0;
   }
@@ -90,7 +90,7 @@ inline uint16_t DepthRegistrationCPU::interpolate(const cv::Mat &in, const float
   vRB = abs(pRB - avg) < thres;
   count = vLT + vRT + vLB + vRB;
 
-  if(count < 3)
+  if (count < 3)
   {
     return 0;
   }
@@ -110,19 +110,19 @@ inline uint16_t DepthRegistrationCPU::interpolate(const cv::Mat &in, const float
   const double fRB = vRB ? tmp - sqrt(distXH + distYH) : 0;
   const double sum = fLT + fRT + fLB + fRB;
 
-  return ((pLT * fLT +  pRT * fRT + pLB * fLB + pRB * fRB) / sum) + 0.5;
+  return ((pLT * fLT + pRT * fRT + pLB * fLB + pRB * fRB) / sum) + 0.5;
 }
 
 void DepthRegistrationCPU::remapDepth(const cv::Mat &depth, cv::Mat &scaled) const
 {
   scaled.create(sizeRegistered, CV_16U);
-  #pragma omp parallel for
-  for(size_t r = 0; r < (size_t)sizeRegistered.height; ++r)
+#pragma omp parallel for
+  for (size_t r = 0; r < (size_t)sizeRegistered.height; ++r)
   {
     uint16_t *itO = scaled.ptr<uint16_t>(r);
     const float *itX = mapX.ptr<float>(r);
     const float *itY = mapY.ptr<float>(r);
-    for(size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++itO, ++itX, ++itY)
+    for (size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++itO, ++itX, ++itY)
     {
       *itO = interpolate(depth, *itX, *itY);
     }
@@ -133,18 +133,18 @@ void DepthRegistrationCPU::projectDepth(const cv::Mat &scaled, cv::Mat &register
 {
   registered = cv::Mat::zeros(sizeRegistered, CV_16U);
 
-  #pragma omp parallel for
-  for(size_t r = 0; r < (size_t)sizeRegistered.height; ++r)
+#pragma omp parallel for
+  for (size_t r = 0; r < (size_t)sizeRegistered.height; ++r)
   {
     const uint16_t *itD = scaled.ptr<uint16_t>(r);
     const double y = lookupY.at<double>(0, r);
     const double *itX = lookupX.ptr<double>();
 
-    for(size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++itD, ++itX)
+    for (size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++itD, ++itX)
     {
       const double depthValue = *itD / 1000.0;
 
-      if(depthValue < zNear || depthValue > zFar)
+      if (depthValue < zNear || depthValue > zFar)
       {
         continue;
       }
@@ -158,11 +158,11 @@ void DepthRegistrationCPU::projectDepth(const cv::Mat &scaled, cv::Mat &register
       const int xP = (fx * pointP[0]) * invZ + cx;
       const int yP = (fy * pointP[1]) * invZ + cy;
 
-      if(xP >= 0 && xP < sizeRegistered.width && yP >= 0 && yP < sizeRegistered.height)
+      if (xP >= 0 && xP < sizeRegistered.width && yP >= 0 && yP < sizeRegistered.height)
       {
         const uint16_t z16 = z * 1000;
         uint16_t &zReg = registered.at<uint16_t>(yP, xP);
-        if(zReg == 0 || z16 < zReg)
+        if (zReg == 0 || z16 < zReg)
         {
           zReg = z16;
         }
@@ -189,14 +189,14 @@ void DepthRegistrationCPU::createLookup()
 
   lookupY = cv::Mat(1, sizeRegistered.height, CV_64F);
   it = lookupY.ptr<double>();
-  for(size_t r = 0; r < (size_t)sizeRegistered.height; ++r, ++it)
+  for (size_t r = 0; r < (size_t)sizeRegistered.height; ++r, ++it)
   {
     *it = (r - cy) * fy;
   }
 
   lookupX = cv::Mat(1, sizeRegistered.width, CV_64F);
   it = lookupX.ptr<double>();
-  for(size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++it)
+  for (size_t c = 0; c < (size_t)sizeRegistered.width; ++c, ++it)
   {
     *it = (c - cx) * fx;
   }

@@ -19,7 +19,7 @@
 #ifndef __DEPTH_REGISTRATION_OPENCL_H__
 #define __DEPTH_REGISTRATION_OPENCL_H__
 
-#include <kinect2_registration/kinect2_registration.h>
+#include "kinect2_registration/kinect2_registration.h"
 
 class DepthRegistrationOpenCL : public DepthRegistration
 {
@@ -28,8 +28,10 @@ private:
 
   OCLData *data;
 
+  rclcpp::Node::SharedPtr node;
+
 public:
-  DepthRegistrationOpenCL();
+  DepthRegistrationOpenCL(rclcpp::Node::SharedPtr node);
 
   ~DepthRegistrationOpenCL();
 
