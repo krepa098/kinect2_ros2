@@ -828,19 +828,6 @@ private:
         deviceActive = true;
       }
     }
-    else if (!clientConnected && deviceActive)
-    {
-      OUT_INFO(this, "no clients connected. stopping device...");
-      if (!device->stop())
-      {
-        OUT_ERROR(this, "could not stop device!");
-        error = true;
-      }
-      else
-      {
-        deviceActive = false;
-      }
-    }
     else if (deviceActive && (isSubscribedColor != this->isSubscribedColor || isSubscribedDepth != this->isSubscribedDepth))
     {
       if (!device->stop())

@@ -1,37 +1,31 @@
 <?xml version="1.0"?>
-<package>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>kinect2_calibration</name>
-  <version>0.0.1</version>
+  <version>0.0.0</version>
   <description>The kinect2_calibration package</description>
+  <maintainer email="paul@todo.todo">paul</maintainer>
+  <license>Apache-2.0</license>
 
-  <maintainer email="wiedemeyer@informatik.uni-bremen.de">Thiemo Wiedemeyer</maintainer>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <license>Apache 2.0</license>
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>message_filters</depend>
+  <depend>image_transport</depend>
+  <depend>compressed_image_transport</depend>
+  <depend>compressed_depth_image_transport</depend>
+  <depend>kinect2_registration</depend>
+  <depend>kinect2_bridge</depend>
+  <depend>cv_bridge</depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <exec_depend>ros2launch</exec_depend>
 
-  <build_depend>roscpp</build_depend>
-  <build_depend>rostime</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>message_filters</build_depend>
-  <build_depend>image_transport</build_depend>
-  <build_depend>compressed_image_transport</build_depend>
-  <build_depend>compressed_depth_image_transport</build_depend>
-  <build_depend>kinect2_bridge</build_depend>
-  <build_depend>cv_bridge</build_depend><!-- Depend on cv_bridge instead of libopencv-dev to support ROS Hydro.-->
-
-  <run_depend>message_runtime</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rostime</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>message_filters</run_depend>
-  <run_depend>image_transport</run_depend>
-  <run_depend>compressed_image_transport</run_depend>
-  <run_depend>compressed_depth_image_transport</run_depend>
-  <run_depend>cv_bridge</run_depend><!-- Depend on cv_bridge instead of libopencv-dev to support ROS Hydro.-->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>
