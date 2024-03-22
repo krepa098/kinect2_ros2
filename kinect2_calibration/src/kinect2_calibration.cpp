@@ -237,8 +237,6 @@ private:
 
   void callback(const sensor_msgs::msg::Image::ConstSharedPtr imageColor, const sensor_msgs::msg::Image::ConstSharedPtr imageIr, const sensor_msgs::msg::Image::ConstSharedPtr imageDepth)
   {
-    OUT_INFO(node, "callback");
-
     std::vector<cv::Point2f> pointsColor, pointsIr;
     cv::Mat color, ir, irGrey, irScaled, depth;
     bool foundColor = false;
