@@ -28,7 +28,7 @@ launch:
           value: false
 
         - name: "depth_method"  
-          value: "opencl"
+          value: "default"
 
         - name: "reg_method"  
           value: "default"

@@ -45,6 +45,7 @@
 #include "tf2/LinearMath/Transform.h"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include "tf2_ros/static_transform_broadcaster.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
@@ -1469,7 +1470,7 @@ private:
   void publishStaticTF()
   {
     setThreadName("TFPublisher");
-    tf2_ros::TransformBroadcaster broadcaster(this);
+    tf2_ros::StaticTransformBroadcaster broadcaster(this);
     geometry_msgs::msg::TransformStamped stColorOpt, stIrOpt;
     auto now = this->get_clock()->now();
 
