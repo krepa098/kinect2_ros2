@@ -11,7 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
-  <depend>Eigen3</depend>
+  <depend>eigen</depend>
 
   <exec_depend>ros2launch</exec_depend>
 
