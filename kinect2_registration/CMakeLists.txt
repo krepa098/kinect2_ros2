@@ -53,8 +53,7 @@ target_include_directories(${PROJECT_NAME}
                           include/)
 
 if(OpenMP_CXX_FOUND)
-  target_link_libraries(${PROJECT_NAME} "${OpenMP_CXX_FLAGS}")
-  target_compile_options(${PROJECT_NAME} INTERFACE "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
 endif()
 
 ament_target_dependencies(${PROJECT_NAME} rclcpp OpenCV Eigen3)
