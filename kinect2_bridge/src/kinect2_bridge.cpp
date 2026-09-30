@@ -263,7 +263,7 @@ private:
     this->declare_parameter("bilateral_filter", true);
     this->declare_parameter("edge_aware_filter", true);
     this->declare_parameter("publish_tf", false);
-    this->declare_parameter("base_name_tf", base_name);
+    this->declare_parameter("base_name_tf", this->get_parameter("base_name").as_string());
     this->declare_parameter("worker_threads", 4);
 
     this->get_parameter("base_name", base_name);
