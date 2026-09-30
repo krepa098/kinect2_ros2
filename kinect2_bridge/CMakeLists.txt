@@ -20,12 +20,13 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(freenect2 REQUIRED)
+find_package(OpenMP REQUIRED)
 
 add_executable(${PROJECT_NAME}_node
 	src/kinect2_bridge.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_node freenect2)
+target_link_libraries(${PROJECT_NAME}_node freenect2 OpenMP::OpenMP_CXX)
 
 include_directories(include/kinect2_bridge)
 
